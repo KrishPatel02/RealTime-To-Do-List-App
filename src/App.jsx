@@ -13,22 +13,16 @@ import Auth from "./Auth";
 const App = () => {
     const [taskTitle, setTaskTitle] = useState("");
     const [taskDescription, setTaskDescription] = useState("");
-    const [toDoTasks, setToDoTasks] = useState([]);
-    const [completedTasks, setCompletedTasks] = useState([]);
+    const [tasks, setTasks] = useState([]);
     const [currentCategory, setCurrentCategory] = useState("toDo");
     const [user, setUser] = useState(null);
 
     // Fetch tasks from Firestore on component mount
     useEffect(() => {
         const fetchTasks = async () => {
-            const toDoTasksSnapshot = await getDocs(collection(db, "toDoTasks"));
-            const completedTasksSnapshot = await getDocs(collection(db, "completedTasks"));
-
-            const toDoTasksList = toDoTasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            const completedTasksList = completedTasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-            setToDoTasks(toDoTasksList);
-            setCompletedTasks(completedTasksList);
+            const tasksSnapshot = await getDocs(collection(db, "tasks"));
+            const tasksList = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setTasks(tasksList);
         };
 
         fetchTasks();
@@ -44,62 +38,42 @@ const App = () => {
             completed: false,
         };
 
-        const docRef = await addDoc(collection(db, "toDoTasks"), newTask);
-        setToDoTasks([...toDoTasks, { id: docRef.id, ...newTask }]);
-        setTaskTitle("");
-        setTaskDescription("");
+        try {
+            const docRef = await addDoc(collection(db, "tasks"), newTask);
+            setTasks([...tasks, { id: docRef.id, ...newTask }]);
+            setTaskTitle("");
+            setTaskDescription("");
+        } catch (error) {
+            console.error("Error adding document: ", error);
+        }
     };
 
     // Delete Task Function
-    const deleteTask = async (id, category) => {
-        if (category === "toDo") {
-            await deleteDoc(doc(db, "toDoTasks", id));
-            setToDoTasks(toDoTasks.filter(task => task.id !== id));
-        } else if (category === "completed") {
-            await deleteDoc(doc(db, "completedTasks", id));
-            setCompletedTasks(completedTasks.filter(task => task.id !== id));
-        }
+    const deleteTask = async (id) => {
+        await deleteDoc(doc(db, "tasks", id));
+        setTasks(tasks.filter(task => task.id !== id));
     };
 
     // Mark Complete Function
     const markComplete = async (index) => {
-        let updatedToDoTasks = [...toDoTasks];
-        let updatedCompletedTasks = [...completedTasks];
-        let task = {};
+        const taskToUpdate = tasks[index];
+        const updatedTask = { ...taskToUpdate, completed: !taskToUpdate.completed };
+        await updateDoc(doc(db, "tasks", taskToUpdate.id), updatedTask);
 
-        if (currentCategory === "toDo") {
-            task = { ...updatedToDoTasks[index], completed: true };
-            await addDoc(collection(db, "completedTasks"), task);
-            await deleteDoc(doc(db, "toDoTasks", updatedToDoTasks[index].id));
-            updatedCompletedTasks.push(task);
-            updatedToDoTasks.splice(index, 1);
-        } else if (currentCategory === "completed") {
-            task = { ...updatedCompletedTasks[index], completed: false };
-            await addDoc(collection(db, "toDoTasks"), task);
-            await deleteDoc(doc(db, "completedTasks", updatedCompletedTasks[index].id));
-            updatedToDoTasks.push(task);
-            updatedCompletedTasks.splice(index, 1);
-        }
-
-        setToDoTasks(updatedToDoTasks);
-        setCompletedTasks(updatedCompletedTasks);
+        const updatedTasks = [...tasks];
+        updatedTasks[index] = updatedTask;
+        setTasks(updatedTasks);
     };
 
     // Edit Task Function
-    const editTask = async (index, newTitle, newDescription, category) => {
-        if (category === "toDo") {
-            const taskRef = doc(db, "toDoTasks", toDoTasks[index].id);
-            await updateDoc(taskRef, { title: newTitle, description: newDescription });
-            const updatedToDoTasks = [...toDoTasks];
-            updatedToDoTasks[index] = { ...updatedToDoTasks[index], title: newTitle, description: newDescription };
-            setToDoTasks(updatedToDoTasks);
-        } else if (category === "completed") {
-            const taskRef = doc(db, "completedTasks", completedTasks[index].id);
-            await updateDoc(taskRef, { title: newTitle, description: newDescription });
-            const updatedCompletedTasks = [...completedTasks];
-            updatedCompletedTasks[index] = { ...updatedCompletedTasks[index], title: newTitle, description: newDescription };
-            setCompletedTasks(updatedCompletedTasks);
-        }
+    const editTask = async (index, newTitle, newDescription) => {
+        const taskToUpdate = tasks[index];
+        const updatedTask = { ...taskToUpdate, title: newTitle, description: newDescription };
+        await updateDoc(doc(db, "tasks", taskToUpdate.id), updatedTask);
+
+        const updatedTasks = [...tasks];
+        updatedTasks[index] = updatedTask;
+        setTasks(updatedTasks);
     };
 
     const handleCategoryChange = (category) => {
@@ -143,8 +117,7 @@ const App = () => {
                     onCategoryChange={handleCategoryChange}
                 />
                 <TaskListBox
-                    toDoTasks={toDoTasks}
-                    completedTasks={completedTasks}
+                    tasks={tasks}
                     onDelete={deleteTask}
                     onMarkComplete={markComplete}
                     onEdit={editTask}
