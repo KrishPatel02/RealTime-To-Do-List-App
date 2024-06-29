@@ -7,6 +7,7 @@ import InputBox from "./InputBox";
 
 const TaskItem = ({
     task,
+    index,
     onDelete,
     onMarkComplete,
     onEdit,
@@ -25,7 +26,7 @@ const TaskItem = ({
     };
 
     const saveEdit = () => {
-        onEdit(task.id, editTitle, editDescription, currentCategory);
+        onEdit(task.id, editTitle, editDescription);
         setIsEditing(false);
     };
 
@@ -57,9 +58,10 @@ const TaskItem = ({
                     <ListItemText primary={task.title} secondary={task.description} />
                     <ListBtn
                         task={task}
-                        onDelete={() => onDelete(task.id, currentCategory)}
-                        onMarkComplete={() => onMarkComplete(task.id)}
+                        onDelete={() => onDelete(task.id)}
+                        onMarkComplete={() => onMarkComplete(task)}
                         onEdit={() => setIsEditing(true)}
+                        index={index}
                         currentCategory={currentCategory}
                     />
                 </>
@@ -67,6 +69,5 @@ const TaskItem = ({
         </ListItem>
     );
 };
-
 
 export default TaskItem;
