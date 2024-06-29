@@ -1,0 +1,20 @@
+.inputField {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-bottom: var(--mainBorderBottom);
+    background-color: var(--mainBGColor) !important;
+    outline: none;
+}
+
+.inputField::placeholder {
+    color: var(--color);
+}
+
+.inputTitle {
+    font-size: var(--headingTextSize);
+}
+
+.inputDescription {
+    color: var(--color);
+} 
