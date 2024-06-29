@@ -1,0 +1,40 @@
+.mainTitle {
+    text-align: center;
+    padding: 30px;
+    font-size: var(--headingTextSize);
+}
+
+.todoApp {
+    height: 80vh;
+    width: 70vw;
+    margin: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    text-align: center;
+    border-radius: var(--mainBoxRadius);
+}
+
+.todoControl {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1em;
+}
+
+.inputControl {
+    width: 60%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1em;
+    box-shadow: var(--mainBoxShadow);
+}
+
+.todoCategory {
+    width: 50%;
+}
+
+.todoCategory Button {
+    margin: 0.5em;
+}

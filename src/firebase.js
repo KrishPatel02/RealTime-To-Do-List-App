@@ -1,10 +1,12 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
     apiKey: "AIzaSyB7bR5S2bCzOhFwJgeN_PXqjL5X8zwO-mw",
     authDomain: "realtime-to-do-list-app.firebaseapp.com",
+    databaseURL: "https://realtime-to-do-list-app-default-rtdb.firebaseio.com",
     projectId: "realtime-to-do-list-app",
     storageBucket: "realtime-to-do-list-app.appspot.com",
     messagingSenderId: "29696643791",
@@ -13,8 +15,9 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 const db = getFirestore(app);
 
-export { auth, provider, db };
+export { auth, provider, db, analytics };

@@ -12,9 +12,10 @@ const TaskListBox = ({
     onEdit,
     currentCategory,
 }) => {
-    const filteredTasks = tasks.filter((task) =>
+    // Ensure tasks is not undefined before filtering
+    const filteredTasks = tasks ? tasks.filter((task) =>
         currentCategory === "toDo" ? !task.completed : task.completed
-    );
+    ) : [];
 
     const renderTasks = (tasks) =>
         tasks.map((task, index) => (

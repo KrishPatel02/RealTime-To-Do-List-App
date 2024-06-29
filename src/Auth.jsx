@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import { auth, provider } from "./firebase";
 import { signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
+import { Button } from "@mui/material";
 
 const Auth = ({ user, setUser }) => {
     useEffect(() => {
@@ -33,11 +34,11 @@ const Auth = ({ user, setUser }) => {
         <div>
             {user ? (
                 <>
-                    <p>Welcome, {user.displayName}</p>
-                    <button onClick={logOut}>Log Out</button>
+                    <h2>Welcome, {user.displayName}</h2>
+                    <Button onClick={logOut}>Log Out</Button>
                 </>
             ) : (
-                <button onClick={signIn}>Sign In with Google</button>
+                <Button onClick={signIn}>Sign In with Google</Button>
             )}
         </div>
     );

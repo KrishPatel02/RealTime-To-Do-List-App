@@ -6,130 +6,158 @@ import ControlBtn from "./Components/ControlBtn";
 import TaskListBox from "./Components/TaskListBox";
 import CategoryControls from "./Components/CategoryControls";
 import AddTaskIcon from "@mui/icons-material/AddTask";
-import Auth from "./Auth";
-import { db } from "./firebase";
-import {
-    collection,
-    addDoc,
-    onSnapshot,
-    updateDoc,
-    doc,
-    deleteDoc,
-} from "firebase/firestore";
+import { db } from "./firebase"; // Import Firestore database
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore";
+import Auth from './Auth';
 
 const App = () => {
-    const [user, setUser] = useState(null);
     const [taskTitle, setTaskTitle] = useState("");
     const [taskDescription, setTaskDescription] = useState("");
-    const [tasks, setTasks] = useState([]);
+    const [toDoTasks, setToDoTasks] = useState([]);
+    const [completedTasks, setCompletedTasks] = useState([]);
     const [currentCategory, setCurrentCategory] = useState("toDo");
 
+ 
     useEffect(() => {
-        if (user) {
-            const unsubscribe = onSnapshot(collection(db, "tasks"), (snapshot) => {
-                const tasksData = snapshot.docs.map((doc) => ({
-                    id: doc.id,
-                    ...doc.data(),
-                }));
-                setTasks(tasksData);
-            });
-            return () => unsubscribe();
-        }
-    }, [user]);
+        const fetchTasks = async () => {
+            try {
+                const toDoTasksSnapshot = await getDocs(collection(db, "toDoTasks"));
+                const completedTasksSnapshot = await getDocs(collection(db, "completedTasks"));
 
+                const toDoTasksList = toDoTasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const completedTasksList = completedTasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                setToDoTasks(toDoTasksList);
+                setCompletedTasks(completedTasksList);
+
+                console.log("Fetched to-do tasks:", toDoTasksList);
+                console.log("Fetched completed tasks:", completedTasksList);
+            } catch (error) {
+                console.error("Error fetching tasks:", error);
+            }
+        };
+
+        fetchTasks();
+    }, []);
+
+
+    // Add New Task Function
     const addTask = async () => {
-        try {
-            await addDoc(collection(db, "tasks"), {
-                title: taskTitle,
-                description: taskDescription,
-                completed: false,
-                uid: user.uid,
-            });
-            setTaskTitle("");
-            setTaskDescription("");
-        } catch (error) {
-            console.error("Error adding task: ", error.message);
+        const newTask = {
+            title: taskTitle,
+            description: taskDescription,
+            completed: false,
+        };
+
+        const docRef = await addDoc(collection(db, "toDoTasks"), newTask);
+        setToDoTasks([...toDoTasks, { id: docRef.id, ...newTask }]);
+        setTaskTitle("");
+        setTaskDescription("");
+    };
+
+    // Delete Task Function
+    const deleteTask = async (id, category) => {
+        if (category === "toDo") {
+            await deleteDoc(doc(db, "toDoTasks", id));
+            setToDoTasks(toDoTasks.filter(task => task.id !== id));
+        } else if (category === "completed") {
+            await deleteDoc(doc(db, "completedTasks", id));
+            setCompletedTasks(completedTasks.filter(task => task.id !== id));
         }
     };
 
-    const deleteTask = async (taskId) => {
-        try {
-            await deleteDoc(doc(db, "tasks", taskId));
-        } catch (error) {
-            console.error("Error deleting task: ", error.message);
+    // Mark Complete Function
+    const markComplete = async (index) => {
+        let updatedToDoTasks = [...toDoTasks];
+        let updatedCompletedTasks = [...completedTasks];
+        let task = {};
+
+        if (currentCategory === "toDo") {
+            task = { ...updatedToDoTasks[index], completed: true };
+            await addDoc(collection(db, "completedTasks"), task);
+            await deleteDoc(doc(db, "toDoTasks", updatedToDoTasks[index].id));
+            updatedCompletedTasks.push(task);
+            updatedToDoTasks.splice(index, 1);
+        } else if (currentCategory === "completed") {
+            task = { ...updatedCompletedTasks[index], completed: false };
+            await addDoc(collection(db, "toDoTasks"), task);
+            await deleteDoc(doc(db, "completedTasks", updatedCompletedTasks[index].id));
+            updatedToDoTasks.push(task);
+            updatedCompletedTasks.splice(index, 1);
+        }
+
+        setToDoTasks(updatedToDoTasks);
+        setCompletedTasks(updatedCompletedTasks);
+    };
+
+    // Edit Task Function
+    const editTask = async (index, newTitle, newDescription, category) => {
+        if (category === "toDo") {
+            const taskRef = doc(db, "toDoTasks", toDoTasks[index].id);
+            await updateDoc(taskRef, { title: newTitle, description: newDescription });
+            const updatedToDoTasks = [...toDoTasks];
+            updatedToDoTasks[index] = { ...updatedToDoTasks[index], title: newTitle, description: newDescription };
+            setToDoTasks(updatedToDoTasks);
+        } else if (category === "completed") {
+            const taskRef = doc(db, "completedTasks", completedTasks[index].id);
+            await updateDoc(taskRef, { title: newTitle, description: newDescription });
+            const updatedCompletedTasks = [...completedTasks];
+            updatedCompletedTasks[index] = { ...updatedCompletedTasks[index], title: newTitle, description: newDescription };
+            setCompletedTasks(updatedCompletedTasks);
         }
     };
 
-    const markComplete = async (task) => {
-        try {
-            await updateDoc(doc(db, "tasks", task.id), {
-                completed: !task.completed,
-            });
-        } catch (error) {
-            console.error("Error updating task: ", error.message);
-        }
-    };
-
-    const editTask = async (taskId, newTitle, newDescription) => {
-        try {
-            await updateDoc(doc(db, "tasks", taskId), {
-                title: newTitle,
-                description: newDescription,
-            });
-        } catch (error) {
-            console.error("Error editing task: ", error.message);
-        }
+    const handleCategoryChange = (category) => {
+        setCurrentCategory(category);
     };
 
     return (
         <>
-            <Auth user={user} setUser={setUser} />
-            {user && (
-                <div>
-                    <h1 className="mainTitle">To Do App</h1>
-                    <div className="todoApp">
-                        <div className="todoControl">
-                            <div className="inputControl">
-                                <InputBox
-                                    className="inputTitle"
-                                    placeholder={"Add Title of New Task"}
-                                    value={taskTitle}
-                                    onChange={(e) => setTaskTitle(e.target.value)}
-                                />
-                                <InputBox
-                                    className="inputDescription"
-                                    placeholder={"Add Description of New Task"}
-                                    value={taskDescription}
-                                    onChange={(e) => setTaskDescription(e.target.value)}
-                                />
-                            </div>
-                            <ControlBtn
-                                sx={{
-                                    color: "var(--themeColor)",
-                                    "&:hover": {
-                                        backgroundColor: "var(--themeBGColor)",
-                                    },
-                                }}
-                                className="addBtn"
-                                btnTitle={<AddTaskIcon />}
-                                hoverTitle="Add Task"
-                                onClick={addTask}
-                            />
-                        </div>
-                        <CategoryControls
-                            currentCategory={currentCategory}
-                            onCategoryChange={setCurrentCategory}
+            <Auth />
+            <h1 className="mainTitle">To Do App</h1>
+            <div className="todoApp">
+                <div className="todoControl">
+                    <div className="inputControl">
+                        <InputBox
+                            className="inputTitle"
+                            placeholder={"Add Title of New Task"}
+                            value={taskTitle}
+                            onChange={(e) => setTaskTitle(e.target.value)}
                         />
-                        <TaskListBox
-                            tasks={tasks}
-                            onDelete={deleteTask}
-                            onMarkComplete={markComplete}
-                            onEdit={editTask}
-                            currentCategory={currentCategory}
+                        <InputBox
+                            className="inputDescription"
+                            placeholder={"Add Description of New Task"}
+                            value={taskDescription}
+                            onChange={(e) => setTaskDescription(e.target.value)}
                         />
                     </div>
+                    <ControlBtn
+                        sx={{
+                            color: "var(--themeColor)",
+                            "&:hover": {
+                                backgroundColor: "var(--themeBGColor)",
+                            },
+                        }}
+                        className="addBtn"
+                        btnTitle={<AddTaskIcon />}
+                        hoverTitle="Add Task"
+                        onClick={addTask}
+                    />
                 </div>
-            )}
+                <CategoryControls
+                    currentCategory={currentCategory}
+                    onCategoryChange={handleCategoryChange}
+                />
+                <TaskListBox
+                    toDoTasks={toDoTasks}
+                    completedTasks={completedTasks}
+                    onDelete={deleteTask}
+                    onMarkComplete={markComplete}
+                    onEdit={editTask}
+                    currentCategory={currentCategory}
+                />
+            </div>
+
         </>
     );
 };
