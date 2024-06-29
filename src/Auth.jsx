@@ -5,7 +5,7 @@ import { auth, provider } from "./firebase";
 import { signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
 import { Button } from "@mui/material";
 
-const Auth = ({ user, setUser }) => {
+const Auth = ({ children, user, setUser }) => {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             setUser(currentUser);
@@ -36,6 +36,7 @@ const Auth = ({ user, setUser }) => {
                 <>
                     <h2>Welcome, {user.displayName}</h2>
                     <Button onClick={logOut}>Log Out</Button>
+                    {children}
                 </>
             ) : (
                 <Button onClick={signIn}>Sign In with Google</Button>

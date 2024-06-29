@@ -8,7 +8,7 @@ import CategoryControls from "./Components/CategoryControls";
 import AddTaskIcon from "@mui/icons-material/AddTask";
 import { db } from "./firebase"; // Import Firestore database
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore";
-import Auth from './Auth';
+import Auth from "./Auth";
 
 const App = () => {
     const [taskTitle, setTaskTitle] = useState("");
@@ -16,33 +16,28 @@ const App = () => {
     const [toDoTasks, setToDoTasks] = useState([]);
     const [completedTasks, setCompletedTasks] = useState([]);
     const [currentCategory, setCurrentCategory] = useState("toDo");
+    const [user, setUser] = useState(null);
 
- 
+    // Fetch tasks from Firestore on component mount
     useEffect(() => {
         const fetchTasks = async () => {
-            try {
-                const toDoTasksSnapshot = await getDocs(collection(db, "toDoTasks"));
-                const completedTasksSnapshot = await getDocs(collection(db, "completedTasks"));
+            const toDoTasksSnapshot = await getDocs(collection(db, "toDoTasks"));
+            const completedTasksSnapshot = await getDocs(collection(db, "completedTasks"));
 
-                const toDoTasksList = toDoTasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                const completedTasksList = completedTasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const toDoTasksList = toDoTasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const completedTasksList = completedTasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                setToDoTasks(toDoTasksList);
-                setCompletedTasks(completedTasksList);
-
-                console.log("Fetched to-do tasks:", toDoTasksList);
-                console.log("Fetched completed tasks:", completedTasksList);
-            } catch (error) {
-                console.error("Error fetching tasks:", error);
-            }
+            setToDoTasks(toDoTasksList);
+            setCompletedTasks(completedTasksList);
         };
 
         fetchTasks();
     }, []);
 
-
     // Add New Task Function
     const addTask = async () => {
+        if (taskTitle.trim() === "" || taskDescription.trim() === "") return;
+
         const newTask = {
             title: taskTitle,
             description: taskDescription,
@@ -112,21 +107,20 @@ const App = () => {
     };
 
     return (
-        <>
-            <Auth />
+        <Auth user={user} setUser={setUser}>
             <h1 className="mainTitle">To Do App</h1>
             <div className="todoApp">
                 <div className="todoControl">
                     <div className="inputControl">
                         <InputBox
                             className="inputTitle"
-                            placeholder={"Add Title of New Task"}
+                            placeholder="Add Title of New Task"
                             value={taskTitle}
                             onChange={(e) => setTaskTitle(e.target.value)}
                         />
                         <InputBox
                             className="inputDescription"
-                            placeholder={"Add Description of New Task"}
+                            placeholder="Add Description of New Task"
                             value={taskDescription}
                             onChange={(e) => setTaskDescription(e.target.value)}
                         />
@@ -157,8 +151,7 @@ const App = () => {
                     currentCategory={currentCategory}
                 />
             </div>
-
-        </>
+        </Auth>
     );
 };
 
